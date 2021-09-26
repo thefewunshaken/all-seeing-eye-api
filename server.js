@@ -47,7 +47,7 @@ app.get('*', function(req, res){
   return res.status(404).json({ message: 'Invalid URL'});
 });
 
-app.listen(3005, () => console.log(`Smart Brain Backend is running`));
+app.listen(process.env.PORT || 3000, () => console.log(`Smart Brain Backend is running`));
 
 
 /*
