@@ -8,10 +8,10 @@ const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD;
 const db = require('knex')({
   client: 'pg',
   connection: {
-    host : POSTGRES_HOST,
-    user : 'postgres',
-    password : POSTGRES_PASSWORD,
-    database : 'smartbrain'
+    connectionString : process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
   }
 });
 
