@@ -1,46 +1,62 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
-const knex = require('knex');
 
-const register = require('./controllers/register');
-const signIn = require('./controllers/signIn');
-const profile = require('./controllers/profile');
-const image = require('./controllers/image');
-
-const db = knex({
+const db = require('knex')({
   client: 'pg',
   connection: {
     host : '127.0.0.1',
     user : 'postgres',
-    password : 'S0ULk33p3r!',
-    database : 'all-seeing-eye'
+    password : 'password',
+    database : 'smartbrain'
   }
 });
 
-const app = express();
 
-app.use(bodyParser.json());
+const app = express();
+app.use(express.json());
 app.use(cors());
 
-app.get('/', (req, res) => { res.send(database.users) });
-app.post('/signin', (req, res) => { signIn.handleSignIn(req, res, db, bcrypt) });
-app.post('/register', (req, res) => { register.handleRegister(req, res, db, bcrypt) });
-app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, db) });
-app.put('/image', (req, res) => { image.handleImage(req, res, db) });
-app.post('/imageurl', (req, res) => { image.handleApiCall(req, res) });
+const User = require('./models/user')(db);
 
-app.listen(3001, () => {
-  console.log('Server is running on port 3001.')
+app.get('/', (req, res) => {
+  res.send('hi');
+})
+
+const AuthController = require('./controllers/auth')(User);
+app.post('/signin', AuthController.signin);
+app.post('/signup', AuthController.signup);
+
+const UserController = require('./controllers/user')(User);
+app.post('/update-entries', UserController.updateEntries);
+app.get('/profile/:username', UserController.getUserProfile);
+
+const ImageController = require('./controllers/image')();
+app.post('/image', ImageController.imageData);
+
+
+
+app.get('/leaderboard', (req, res) => {
+  // select first_name, entries from users ORDER BY entries DESC limit 10;
 });
+
+// catch-all for non-existing routes
+app.get('*', function(req, res){
+  return res.status(404).json({ message: 'Invalid URL'});
+});
+
+app.listen(3005, () => console.log(`Smart Brain Backend is running`));
 
 
 /*
-/ --> res = this is working
-/signin --> POST = success/fail
-/register --> POST = user{}
-/profile/:userId --> GET = user{}
-/image --> PUT --> user{}
-
+  API DESIGN
+  /signin --> POST returns success/fail
+  /signup --> POST returns new user
+  /profile/:userId --> GET returns user
+  /image --> POST data to clarifai API
+  /update-entries --> PUT returns user count
+  /leaderboard --> GET returns top 10 entries and first name from users table
+  /total-users --> GET count from users table
+  /average-entries-score --> GET AVG from all users entries
 */

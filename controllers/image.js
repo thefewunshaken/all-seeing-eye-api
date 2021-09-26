@@ -1,27 +1,53 @@
-const Clarifai = require('clarifai');
+const {ClarifaiStub, grpc} = require("clarifai-nodejs-grpc");
+const CLARIFAI_API_KEY = process.env.CLARIFAI_API_KEY;
+const stub = ClarifaiStub.grpc();
+// This will be used by every Clarifai endpoint call.
+const metadata = new grpc.Metadata();
+metadata.set('authorization', `Key ${CLARIFAI_API_KEY}`);
 
-const app = new Clarifai.App({apiKey: '541b9ad684524cdfb15a12bde705e975'});
-
-const handleApiCall = (req, res) => {
-  app.models.predict(Clarifai.FACE_DETECT_MODEL, req.body.input)
-  .then(data => {
-    res.json(data);
-  })
-  .catch(err => res.status(400).json('Unable to work with API'));
+module.exports = function() {
+   return {
+      imageData: function (req, res) {
+         const imageUrl = req.body.url;
+       
+         stub.PostWorkflowResults(
+           {
+             workflow_id: "Demographics",
+             inputs: [
+                 {data: {image: {url: imageUrl}}}
+             ]
+           },
+           metadata,
+           (err, response) => {
+            if (err) {
+            throw new Error(err);
+            }
+      
+            if (response.status.code !== 10000) {
+            throw new Error("Post workflow results failed, status: " + response.status.description);
+            }
+      
+            // We'll get one WorkflowResult for each input we used above. Because of one input, we have here
+            // one WorkflowResult.
+            const results = response.results[0];
+            const data = [];
+      
+            for (const output of results.outputs) {
+            const model = output.model;
+      
+            data.push({
+               model: {
+                  name: model.name,
+                  id: model.id,
+                  status: model.model_version.status
+               },
+               data: output.data
+            });
+            }
+       
+            return res.status(200).json(data);
+           }
+         );
+      }
+   }
 }
-
-const handleImage = (req, res, db) => {
-  const { id } = req.body;
-  db('users').where('id', '=', id)
-  .increment('entries', 1)
-  .returning('entries')
-  .then(entries => {
-    res.json(entries[0]);
-  })
-  .catch(err => res.status(400).json('Unable to get entries'))
-}
-
-module.exports = {
-  handleImage,
-  handleApiCall
-};
