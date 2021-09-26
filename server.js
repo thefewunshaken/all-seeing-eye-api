@@ -2,17 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const POSTGRES_HOST = process.env.POSTGRES_HOST;
+const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD;
 
 const db = require('knex')({
   client: 'pg',
   connection: {
-    host : '127.0.0.1',
+    host : POSTGRES_HOST,
     user : 'postgres',
-    password : 'password',
+    password : POSTGRES_PASSWORD,
     database : 'smartbrain'
   }
 });
-
 
 const app = express();
 app.use(express.json());
