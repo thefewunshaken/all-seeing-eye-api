@@ -2,22 +2,38 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const POSTGRES_HOST = process.env.POSTGRES_HOST;
-const POSTGRES_PASSWORD = process.env.POSTGRES_PASSWORD;
+let db;
 
-const db = require('knex')({
-  client: 'pg',
-  connection: {
-    connectionString : process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
+if (process.env.NODE_ENV !== 'production') {
+  db = require('knex')({
+    client: 'pg',
+    connection: {
+      host: process.env.DATABASE_HOST,
+      user: process.env.DATABASE_USER,
+      password: process.env.DATABASE_PASSWORD,
+      database: process.env.DATABASE_NAME
     }
-  }
-});
+  });
+} else {
+  db = require('knex')({
+    client: 'pg',
+    connection: {
+      connectionString : process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    }
+  });
+}
+
+const corsOptions = {
+  origin: process.env.CLIENT_DOMAIN,
+  optionsSuccessStatus: 200
+};
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 
 const User = require('./models/user')(db);
 
