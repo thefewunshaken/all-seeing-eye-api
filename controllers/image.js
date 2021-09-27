@@ -24,7 +24,8 @@ module.exports = function() {
             }
       
             if (response.status.code !== 10000) {
-            throw new Error("Post workflow results failed, status: " + response.status.description);
+            return res.status(400).json("Post workflow results failed, status: " + response.status.description);
+            // throw new Error("Post workflow results failed, status: " + response.status.description);
             }
       
             // We'll get one WorkflowResult for each input we used above. Because of one input, we have here
